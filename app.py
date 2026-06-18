@@ -4,11 +4,16 @@ import os
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-# Gemini API
+# Load API Key
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = os.getenv("GEMINI_API_KEY")
+
+if not api_key:
+    api_key = st.secrets["GEMINI_API_KEY"]
+
+genai.configure(api_key=api_key)
 
 model = genai.GenerativeModel("gemini-2.5-flash")
 
@@ -27,7 +32,7 @@ col1, col2 = st.columns([5, 1])
 with col1:
     st.title("📄 Fact Check Agent")
     st.write(
-        "Upload a PDF document and extract factual claims using AI."
+        "Upload a PDF document and verify factual claims using AI."
     )
 
 with col2:
@@ -58,10 +63,7 @@ if file:
 
     st.success("PDF Uploaded Successfully")
 
-    # Preview
-
     with st.expander("View PDF Content"):
-
         st.write(text[:5000])
 
     # Extract Claims
@@ -82,41 +84,43 @@ if file:
             - Financial figures
             - Technical facts
 
-            Return a numbered list only.
+            Return only a numbered list.
 
             Document:
-
             {text}
             """
 
             response = model.generate_content(prompt)
 
             st.subheader("Extracted Claims")
-
+            st.info("AI has identified the following factual claims.")
             st.write(response.text)
 
+    # Verify Claims
 
-if st.button("Verify Claims"):
+    if st.button("✅ Verify Claims"):
 
-    with st.spinner("Verifying Claims..."):
+        with st.spinner("Verifying Claims..."):
 
-        verify_prompt = f"""
-        Read the document below.
+            verify_prompt = f"""
+            Read the document below.
 
-        Find factual claims and verify them.
+            Identify factual claims and verify them.
 
-        For each claim provide:
+            For each claim provide:
 
-        Claim:
-        Status: Verified / Inaccurate / False
-        Explanation:
+            Claim:
+            Status: Verified / Inaccurate / False
+            Explanation:
 
-        Document:
-        {text}
-        """
+            Document:
+            {text}
+            """
 
-        result = model.generate_content(verify_prompt)
+            result = model.generate_content(verify_prompt)
 
-        st.subheader("Verification Report")
+            st.success("Fact Checking Completed")
 
-        st.write(result.text)
+            st.subheader("Verification Report")
+
+            st.write(result.text)
